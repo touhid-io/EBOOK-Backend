@@ -25,7 +25,7 @@ def generate_qr_base64(data):
 def to_bangla_num(n):
     return str(n).translate(str.maketrans("0123456789", "০১২৩৪৫৬৭৮৯"))
 
-# --- HTML Template (CSS Updated for Fixes) ---
+# --- HTML Template (CSS Updated for Copyright Page Fix) ---
 
 html_template_str = """
 <!DOCTYPE html>
@@ -64,14 +64,14 @@ html_template_str = """
         
         .cover-main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%; }
         
-        /* FIX 1: Star Icon Positioning */
+        /* Star Icon Positioning */
         .decorative-icon { 
             width: 60px; height: auto; 
             margin-bottom: var(--space-3); 
             opacity: 0.7; 
-            display: block;        /* Force block to accept auto margins */
-            margin-left: auto;     /* Center horizontally */
-            margin-right: auto;    /* Center horizontally */
+            display: block;        
+            margin-left: auto;     
+            margin-right: auto;    
         }
         
         .book-title-en { font-family: var(--font-display); font-size: var(--title-xl); font-weight: 700; line-height: 0.85; color: var(--primary-color); letter-spacing: -1px; text-transform: uppercase; margin: 0; }
@@ -87,23 +87,33 @@ html_template_str = """
         .translator-label { font-family: var(--font-sans); font-size: var(--micro); color: var(--accent-color); text-transform: uppercase; letter-spacing: 2.5px; font-weight: 700; display: block; margin-bottom: 6px; }
         .translator-name { font-family: var(--font-bengali); font-size: var(--body-lg); font-weight: 700; color: var(--primary-color); }
 
-        /* --- COPYRIGHT PAGE --- */
+        /* --- COPYRIGHT PAGE FIX --- */
         .copyright-page { padding: var(--safe-margin); display: flex; flex-direction: column; font-family: var(--font-sans); font-size: var(--body-sm); line-height: 1.6; color: var(--text-secondary); }
         .copyright-header { text-align: center; padding-bottom: var(--space-3); border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: var(--space-3); }
         .copyright-title { font-family: var(--font-display); font-size: var(--title-sm); color: var(--primary-color); font-weight: 600; }
         
-        /* FIX 2: Copyright Grid Broken Layout */
+        /* Using Flexbox instead of Grid for better safety */
         .copyright-main { 
             flex: 1; 
-            width: 100%;           /* Force full width */
-            display: grid; 
-            grid-template-columns: 1fr 1fr; 
-            gap: var(--space-3); 
+            width: 100%;
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: space-between; 
+            align-content: flex-start;
+        }
+        
+        .copyright-section { 
+            width: 48%; /* Explicit width to prevent squashing */
+            margin-bottom: var(--space-4); 
+        }
+
+        .copyright-section.full-width { 
+            width: 100%; 
+            margin-bottom: var(--space-4);
         }
         
         .copyright-section h3 { font-family: var(--font-sans); font-size: var(--caption); font-weight: 700; color: var(--primary-color); text-transform: uppercase; margin-bottom: 6px; }
         .isbn-block { background: var(--cream); padding: var(--space-2); border-left: 3px solid var(--accent-color); margin-top: 5px; }
-        .full-width { grid-column: 1 / -1; }
         .copyright-footer { text-align: center; padding-top: var(--space-3); border-top: 1px solid rgba(0,0,0,0.1); margin-top: var(--space-3); font-size: var(--caption); }
 
         /* --- INDEX PAGE --- */
@@ -120,16 +130,16 @@ html_template_str = """
         .back-cover { display: flex; flex-direction: column; background: linear-gradient(165deg, var(--cream) 0%, var(--paper-white) 100%); }
         .bio-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-6) var(--space-5); text-align: center; width: 100%; }
         
-        /* FIX 3: Author Photo Positioning */
+        /* Author Photo Positioning */
         .author-photo { 
             width: 140px; height: 140px; 
             border-radius: 50%; object-fit: cover; 
             border: 4px solid var(--premium-gold); 
             box-shadow: var(--shadow-medium); 
             margin-bottom: var(--space-4);
-            display: block;        /* Force block */
-            margin-left: auto;     /* Center horizontally */
-            margin-right: auto;    /* Center horizontally */
+            display: block;        
+            margin-left: auto;     
+            margin-right: auto;    
         }
         
         .bio-name { font-family: var(--font-display); font-size: var(--title-sm); font-weight: 700; color: var(--primary-color); margin-bottom: 6px; text-transform: uppercase; }
@@ -197,7 +207,7 @@ html_template_str = """
                 <h3>Copyright Notice</h3>
                 <p>{{ cp_copyright_text }}</p>
             </div>
-            <div class="copyright-section">
+            <div class="copyright-section full-width">
                 <h3>Contact</h3>
                 <p><strong>Web:</strong> {{ cp_contact_web }}</p>
                 <p><strong>Email:</strong> {{ cp_contact_email }}</p>
