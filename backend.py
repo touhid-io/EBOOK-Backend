@@ -11,8 +11,6 @@ from pypdf import PdfWriter, PdfReader
 app = Flask(__name__)
 CORS(app)
 
-# --- Helper Functions ---
-
 def generate_qr_base64(data):
     qr = qrcode.QRCode(box_size=10, border=0)
     qr.add_data(data)
@@ -25,7 +23,7 @@ def generate_qr_base64(data):
 def to_bangla_num(n):
     return str(n).translate(str.maketrans("0123456789", "০১২৩৪৫৬৭৮৯"))
 
-# --- HTML Template ---
+# --- HTML Template with @page Fix ---
 
 html_template_str = """
 <!DOCTYPE html>
@@ -35,6 +33,12 @@ html_template_str = """
     <title>Ebook Template</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Crimson+Pro:wght@400;600;700&family=Noto+Serif+Bengali:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        /* CRITICAL FIX: @page rule to remove default margins */
+        @page {
+            size: A4;
+            margin: 0;
+        }
+
         :root {
             --primary-color: #1a1a2e; --accent-color: #e94560; --premium-gold: #d4af37; --secondary-dark: #16213e;
             --paper-white: #fffef9; --cream: #faf8f3; --text-primary: #1a1a1a; --text-secondary: #4a4a4a; --text-muted: #707070; --text-light: #ffffff;
@@ -44,9 +48,23 @@ html_template_str = """
             --safe-margin: 15mm; --shadow-soft: 0 2px 12px rgba(0,0,0,0.08); --shadow-medium: 0 4px 20px rgba(0,0,0,0.15);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        body { font-family: var(--font-bengali); margin: 0; padding: 0; background: #2d3142; }
         
-        .page { width: 210mm; height: 297mm; background: var(--paper-white); position: relative; overflow: hidden; page-break-after: always; }
+        body { 
+            font-family: var(--font-bengali); 
+            margin: 0; 
+            padding: 0; 
+            background: #2d3142; 
+            width: 210mm; /* Force A4 width */
+        }
+        
+        .page { 
+            width: 210mm; 
+            height: 297mm; 
+            background: var(--paper-white); 
+            position: relative; 
+            overflow: hidden; 
+            page-break-after: always; 
+        }
 
         .front-cover { background: linear-gradient(165deg, var(--paper-white) 0%, var(--cream) 100%); display: flex; flex-direction: column; justify-content: space-between; border: 3mm solid var(--primary-color); outline: 2px solid var(--premium-gold); outline-offset: -10px; }
         .cover-header { padding: var(--space-5) var(--space-4) 0; text-align: center; }
@@ -201,8 +219,6 @@ html_template_str = """
 </body>
 </html>
 """
-
-# --- Main Application Logic ---
 
 @app.route('/api/generate', methods=['POST'])
 def generate_book():
