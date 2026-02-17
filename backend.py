@@ -11,6 +11,8 @@ from pypdf import PdfWriter, PdfReader
 app = Flask(__name__)
 CORS(app)
 
+# --- Helper Functions ---
+
 def generate_qr_base64(data):
     qr = qrcode.QRCode(box_size=10, border=0)
     qr.add_data(data)
@@ -23,7 +25,7 @@ def generate_qr_base64(data):
 def to_bangla_num(n):
     return str(n).translate(str.maketrans("0123456789", "০১২৩৪৫৬৭৮৯"))
 
-# --- HTML Template with @page Fix ---
+# --- HTML Template (CSS Updated for Fixes) ---
 
 html_template_str = """
 <!DOCTYPE html>
@@ -33,12 +35,10 @@ html_template_str = """
     <title>Ebook Template</title>
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600;700&family=Crimson+Pro:wght@400;600;700&family=Noto+Serif+Bengali:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        /* CRITICAL FIX: @page rule to remove default margins */
-        @page {
-            size: A4;
-            margin: 0;
-        }
-
+        /* GLOBAL RESET & PAGE SETUP */
+        @page { size: A4; margin: 0; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        
         :root {
             --primary-color: #1a1a2e; --accent-color: #e94560; --premium-gold: #d4af37; --secondary-dark: #16213e;
             --paper-white: #fffef9; --cream: #faf8f3; --text-primary: #1a1a1a; --text-secondary: #4a4a4a; --text-muted: #707070; --text-light: #ffffff;
@@ -47,31 +47,33 @@ html_template_str = """
             --space-1: 6px; --space-2: 12px; --space-3: 18px; --space-4: 24px; --space-5: 36px; --space-6: 48px;
             --safe-margin: 15mm; --shadow-soft: 0 2px 12px rgba(0,0,0,0.08); --shadow-medium: 0 4px 20px rgba(0,0,0,0.15);
         }
-        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        
-        body { 
-            font-family: var(--font-bengali); 
-            margin: 0; 
-            padding: 0; 
-            background: #2d3142; 
-            width: 210mm; /* Force A4 width */
-        }
-        
-        .page { 
-            width: 210mm; 
-            height: 297mm; 
-            background: var(--paper-white); 
-            position: relative; 
-            overflow: hidden; 
-            page-break-after: always; 
-        }
 
-        .front-cover { background: linear-gradient(165deg, var(--paper-white) 0%, var(--cream) 100%); display: flex; flex-direction: column; justify-content: space-between; border: 3mm solid var(--primary-color); outline: 2px solid var(--premium-gold); outline-offset: -10px; }
+        body { font-family: var(--font-bengali); width: 210mm; background: #2d3142; }
+        .page { width: 210mm; height: 297mm; background: var(--paper-white); position: relative; overflow: hidden; page-break-after: always; }
+
+        /* --- FRONT COVER --- */
+        .front-cover { 
+            background: linear-gradient(165deg, var(--paper-white) 0%, var(--cream) 100%); 
+            display: flex; flex-direction: column; justify-content: space-between; 
+            border: 3mm solid var(--primary-color); 
+            outline: 2px solid var(--premium-gold); outline-offset: -10px; 
+        }
         .cover-header { padding: var(--space-5) var(--space-4) 0; text-align: center; }
         .publisher-badge { display: inline-block; background: var(--primary-color); color: var(--text-light); padding: 6px var(--space-3); font-family: var(--font-sans); font-size: var(--micro); font-weight: 700; letter-spacing: 3px; text-transform: uppercase; border-radius: 2px; }
         .genre-tag { display: block; margin-top: var(--space-2); font-family: var(--font-sans); font-size: var(--caption); color: var(--accent-color); font-weight: 600; letter-spacing: 2px; text-transform: uppercase; }
-        .cover-main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; }
-        .decorative-icon { width: 60px; height: auto; margin-bottom: var(--space-3); opacity: 0.7; }
+        
+        .cover-main { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; width: 100%; }
+        
+        /* FIX 1: Star Icon Positioning */
+        .decorative-icon { 
+            width: 60px; height: auto; 
+            margin-bottom: var(--space-3); 
+            opacity: 0.7; 
+            display: block;        /* Force block to accept auto margins */
+            margin-left: auto;     /* Center horizontally */
+            margin-right: auto;    /* Center horizontally */
+        }
+        
         .book-title-en { font-family: var(--font-display); font-size: var(--title-xl); font-weight: 700; line-height: 0.85; color: var(--primary-color); letter-spacing: -1px; text-transform: uppercase; margin: 0; }
         .book-title-bn { font-family: var(--font-bengali); font-size: var(--title-md); font-weight: 700; color: var(--accent-color); margin-top: var(--space-3); display: inline-block; padding: 0 var(--space-4); position: relative; }
         .book-title-bn::before, .book-title-bn::after { content: ''; position: absolute; top: 50%; width: 35px; height: 2px; background: var(--accent-color); }
@@ -85,15 +87,26 @@ html_template_str = """
         .translator-label { font-family: var(--font-sans); font-size: var(--micro); color: var(--accent-color); text-transform: uppercase; letter-spacing: 2.5px; font-weight: 700; display: block; margin-bottom: 6px; }
         .translator-name { font-family: var(--font-bengali); font-size: var(--body-lg); font-weight: 700; color: var(--primary-color); }
 
+        /* --- COPYRIGHT PAGE --- */
         .copyright-page { padding: var(--safe-margin); display: flex; flex-direction: column; font-family: var(--font-sans); font-size: var(--body-sm); line-height: 1.6; color: var(--text-secondary); }
         .copyright-header { text-align: center; padding-bottom: var(--space-3); border-bottom: 1px solid rgba(0,0,0,0.1); margin-bottom: var(--space-3); }
         .copyright-title { font-family: var(--font-display); font-size: var(--title-sm); color: var(--primary-color); font-weight: 600; }
-        .copyright-main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+        
+        /* FIX 2: Copyright Grid Broken Layout */
+        .copyright-main { 
+            flex: 1; 
+            width: 100%;           /* Force full width */
+            display: grid; 
+            grid-template-columns: 1fr 1fr; 
+            gap: var(--space-3); 
+        }
+        
         .copyright-section h3 { font-family: var(--font-sans); font-size: var(--caption); font-weight: 700; color: var(--primary-color); text-transform: uppercase; margin-bottom: 6px; }
         .isbn-block { background: var(--cream); padding: var(--space-2); border-left: 3px solid var(--accent-color); margin-top: 5px; }
         .full-width { grid-column: 1 / -1; }
         .copyright-footer { text-align: center; padding-top: var(--space-3); border-top: 1px solid rgba(0,0,0,0.1); margin-top: var(--space-3); font-size: var(--caption); }
 
+        /* --- INDEX PAGE --- */
         .index-page { padding: var(--safe-margin); display: flex; flex-direction: column; }
         .index-header { text-align: center; margin-bottom: var(--space-5); position: relative; }
         .index-title { font-family: var(--font-display); font-size: var(--title-lg); font-weight: 700; color: var(--primary-color); text-transform: uppercase; letter-spacing: 3px; }
@@ -103,9 +116,22 @@ html_template_str = """
         .toc-chapter::after { content: ''; position: absolute; bottom: 8px; left: 0; right: 20px; height: 1px; background: repeating-linear-gradient(to right, var(--text-muted) 0, var(--text-muted) 3px, transparent 3px, transparent 7px); opacity: 0.3; }
         .toc-page { font-family: var(--font-display); font-size: var(--title-sm); font-weight: 700; color: var(--accent-color); text-align: right; white-space: nowrap; width: 70px; }
 
+        /* --- BACK COVER --- */
         .back-cover { display: flex; flex-direction: column; background: linear-gradient(165deg, var(--cream) 0%, var(--paper-white) 100%); }
-        .bio-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-6) var(--space-5); text-align: center; }
-        .author-photo { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 4px solid var(--premium-gold); box-shadow: var(--shadow-medium); margin-bottom: var(--space-4); }
+        .bio-section { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: var(--space-6) var(--space-5); text-align: center; width: 100%; }
+        
+        /* FIX 3: Author Photo Positioning */
+        .author-photo { 
+            width: 140px; height: 140px; 
+            border-radius: 50%; object-fit: cover; 
+            border: 4px solid var(--premium-gold); 
+            box-shadow: var(--shadow-medium); 
+            margin-bottom: var(--space-4);
+            display: block;        /* Force block */
+            margin-left: auto;     /* Center horizontally */
+            margin-right: auto;    /* Center horizontally */
+        }
+        
         .bio-name { font-family: var(--font-display); font-size: var(--title-sm); font-weight: 700; color: var(--primary-color); margin-bottom: 6px; text-transform: uppercase; }
         .bio-title-tag { font-family: var(--font-sans); font-size: var(--caption); color: var(--accent-color); text-transform: uppercase; letter-spacing: 2.5px; font-weight: 700; margin-bottom: var(--space-3); display: block; }
         .bio-description { font-family: var(--font-bengali); font-size: var(--body-md); line-height: 1.7; color: var(--text-secondary); max-width: 420px; margin: 0 auto; }
@@ -219,6 +245,8 @@ html_template_str = """
 </body>
 </html>
 """
+
+# --- Main Logic ---
 
 @app.route('/api/generate', methods=['POST'])
 def generate_book():
