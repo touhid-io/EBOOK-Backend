@@ -1,0 +1,7 @@
+flask
+flask-cors
+jinja2
+weasyprint
+pypdf
+qrcode[pil]
+supabase
